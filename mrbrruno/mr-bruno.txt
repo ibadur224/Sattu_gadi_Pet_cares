@@ -1,0 +1,2 @@
+OPENAI_API_KEY=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
+MODEL=mistralai/devstral-2512:free
