@@ -434,278 +434,311 @@
         </div>
     </div>
 
-    <script>
-        // =========== LOCAL STORAGE BACKEND SYSTEM ===========
-        
-        class LocalBackend {
-            constructor() {
-                this.USERS_KEY = 'petcare_users_v2';
-                this.initStorage();
-            }
-            
-            initStorage() {
-                if (!localStorage.getItem(this.USERS_KEY)) {
-                    const initialUsers = [
-                        {
-                            id: this.generateId(),
-                            name: 'John Doe',
-                            email: 'john@example.com',
-                            password: 'password123',
-                            petName: 'Buddy',
-                            petType: 'Dog',
-                            location: 'New York',
-                            createdAt: new Date().toISOString(),
-                            lastLogin: new Date().toISOString()
-                        },
-                        {
-                            id: this.generateId(),
-                            name: 'Jane Smith',
-                            email: 'jane@example.com',
-                            password: 'password123',
-                            petName: 'Whiskers',
-                            petType: 'Cat',
-                            location: 'Los Angeles',
-                            createdAt: new Date().toISOString(),
-                            lastLogin: new Date().toISOString()
-                        }
-                    ];
-                    localStorage.setItem(this.USERS_KEY, JSON.stringify(initialUsers));
-                }
-            }
-            
-            generateId() {
-                return Date.now().toString(36) + Math.random().toString(36).substr(2);
-            }
-            
-            // Register new user
-            async registerUser(userData) {
-                const users = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
-                
-                // Check if email already exists
-                if (users.some(u => u.email === userData.email)) {
-                    return { success: false, message: 'Email already registered' };
-                }
-                
-                // Create new user
-                const newUser = {
-                    id: this.generateId(),
-                    name: userData.name,
-                    email: userData.email,
-                    password: userData.password, // In real app, hash this
-                    petName: userData.petName || '',
-                    petType: userData.petType || 'Not set',
-                    location: userData.location || 'Not set',
-                    createdAt: new Date().toISOString(),
-                    lastLogin: new Date().toISOString()
-                };
-                
-                users.push(newUser);
-                localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
-                
-                // Remove password from returned user
-                const userWithoutPassword = { ...newUser };
-                delete userWithoutPassword.password;
-                
-                return { 
-                    success: true, 
-                    message: 'Registration successful',
-                    user: userWithoutPassword
-                };
-            }
-            
-            // Save users to storage
-            saveUsers(users) {
-                localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
-            }
+   <script>
+    // =========== LOCAL STORAGE BACKEND SYSTEM ===========
+    
+    class LocalBackend {
+        constructor() {
+            this.USERS_KEY = 'petcare_users_v2';
+            this.CURRENT_USER_KEY = 'petcare_current_user';
+            this.COMMUNITY_USERS_KEY = 'petcare_community_users_v3';
+            this.initStorage();
         }
         
-        // Initialize backend
-        const backend = new LocalBackend();
-        
-        // Password visibility toggle
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
-        });
-
-        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
-            const confirmInput = document.getElementById('confirmPassword');
-            const type = confirmInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            confirmInput.setAttribute('type', type);
-            this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
-        });
-
-        // Password strength indicator
-        document.getElementById('password').addEventListener('input', function(e) {
-            const password = e.target.value;
-            const meter = document.getElementById('passwordStrengthMeter');
-            
-            let strength = 0;
-            if (password.length >= 8) strength++;
-            if (/[A-Z]/.test(password)) strength++;
-            if (/[0-9]/.test(password)) strength++;
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
-
-            meter.className = 'strength-meter';
-            if (password.length === 0) {
-                meter.style.width = '0';
-            } else if (strength <= 1) {
-                meter.className += ' strength-weak';
-            } else if (strength <= 2) {
-                meter.className += ' strength-medium';
-            } else {
-                meter.className += ' strength-strong';
-            }
-        });
-
-        // Form submission
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const fullName = document.getElementById('fullName').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const petName = document.getElementById('petName').value.trim();
-            const termsAccepted = document.getElementById('terms').checked;
-            
-            const errorMessage = document.getElementById('errorMessage');
-            const successMessage = document.getElementById('successMessage');
-            
-            // Reset messages
-            errorMessage.classList.remove('show');
-            successMessage.classList.remove('show');
-            errorMessage.textContent = '';
-            successMessage.textContent = '';
-            
-            // Remove error classes from all inputs
-            document.querySelectorAll('.form-input').forEach(input => {
-                input.classList.remove('error', 'success');
-            });
-            
-            // Validation
-            if (!fullName || !email || !password || !confirmPassword) {
-                showError('Please fill in all required fields');
-                return;
-            }
-            
-            if (!termsAccepted) {
-                showError('Please accept the Terms of Service and Privacy Policy');
-                document.getElementById('terms').focus();
-                return;
-            }
-            
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                showError('Please enter a valid email address', 'email');
-                return;
-            }
-            
-            // Password validation
-            if (password.length < 6) {
-                showError('Password must be at least 6 characters long', 'password');
-                return;
-            }
-            
-            if (password !== confirmPassword) {
-                showError('Passwords do not match', 'password', 'confirmPassword');
-                return;
-            }
-            
-            // Show loading state
-            const submitBtn = document.querySelector('.signup-btn');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner"></span> Creating Account...';
-            
-            try {
-                // Use local backend for registration
-                const result = await backend.registerUser({
-                    name: fullName,
-                    email: email,
-                    password: password,
-                    petName: petName
-                });
-                
-                if (result.success) {
-                    successMessage.textContent = result.message + '! Redirecting to sign in...';
-                    successMessage.classList.add('show');
-
-                    // Mark all inputs as successful
-                    document.querySelectorAll('.form-input').forEach(input => {
-                        input.classList.add('success');
-                    });
-
-                    // Redirect to sign-in page after successful registration
-                    setTimeout(() => {
-                        window.location.href = 'sign_in.html';
-                    }, 2000);
-                } else {
-                    throw new Error(result.message || 'Registration failed');
-                }
-                
-            } catch (error) {
-                showError(error.message);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            }
-        });
-        
-        function showError(message, ...fieldIds) {
-            const errorMessage = document.getElementById('errorMessage');
-            errorMessage.textContent = message;
-            errorMessage.classList.add('show');
-            
-            // Mark the fields with errors
-            fieldIds.forEach(fieldId => {
-                if (fieldId) {
-                    const field = document.getElementById(fieldId);
-                    if (field) {
-                        field.classList.add('error');
-                        field.focus();
+        initStorage() {
+            if (!localStorage.getItem(this.USERS_KEY)) {
+                const initialUsers = [
+                    {
+                        id: this.generateId(),
+                        name: 'John Doe',
+                        email: 'john@example.com',
+                        password: 'password123',
+                        petName: 'Buddy',
+                        petType: 'Dog',
+                        location: 'New York',
+                        createdAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString()
+                    },
+                    {
+                        id: this.generateId(),
+                        name: 'Jane Smith',
+                        email: 'jane@example.com',
+                        password: 'password123',
+                        petName: 'Whiskers',
+                        petType: 'Cat',
+                        location: 'Los Angeles',
+                        createdAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString()
                     }
-                }
-            });
+                ];
+                localStorage.setItem(this.USERS_KEY, JSON.stringify(initialUsers));
+            }
         }
         
-        // Clear error when user starts typing
-        document.querySelectorAll('.form-input').forEach(input => {
-            input.addEventListener('input', function() {
-                this.classList.remove('error');
-                document.getElementById('errorMessage').classList.remove('show');
+        generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+        
+        getInitials(name) {
+            return name
+                .split(' ')
+                .map(n => n[0])
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+        }
+        
+        // Register new user
+        async registerUser(userData) {
+            const users = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+            
+            // Check if email already exists
+            if (users.some(u => u.email === userData.email)) {
+                return { success: false, message: 'Email already registered' };
+            }
+            
+            // Create new user
+            const newUser = {
+                id: this.generateId(),
+                name: userData.name,
+                email: userData.email,
+                password: userData.password,
+                petName: userData.petName || '',
+                petType: userData.petType || 'Not set',
+                location: userData.location || 'Not set',
+                avatar: this.getInitials(userData.name),
+                bio: `Hello! I'm ${userData.petName ? userData.petName + "'s" : 'a'} pet parent`,
+                isOnline: true,
+                joinedAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                postCount: 0,
+                likeCount: 0
+            };
+            
+            users.push(newUser);
+            localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+            
+            // Also add to community storage
+            let communityUsers = JSON.parse(localStorage.getItem(this.COMMUNITY_USERS_KEY) || '[]');
+            communityUsers.push({
+                ...newUser,
+                bio: newUser.bio || `Hello! I'm ${userData.petName ? userData.petName + "'s" : 'a'} pet parent`,
+                isOnline: true,
+                joinedAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                postCount: 0,
+                likeCount: 0
             });
+            localStorage.setItem(this.COMMUNITY_USERS_KEY, JSON.stringify(communityUsers));
+            
+            // Remove password from returned user
+            const userWithoutPassword = { ...newUser };
+            delete userWithoutPassword.password;
+            
+            // Auto-login after registration
+            localStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
+            
+            return { 
+                success: true, 
+                message: 'Registration successful',
+                user: userWithoutPassword
+            };
+        }
+        
+        // Save users to storage
+        saveUsers(users) {
+            localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+        }
+    }
+    
+    // Initialize backend
+    const backend = new LocalBackend();
+    
+    // Password visibility toggle
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+    });
+
+    document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+        const confirmInput = document.getElementById('confirmPassword');
+        const type = confirmInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        confirmInput.setAttribute('type', type);
+        this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+    });
+
+    // Password strength indicator
+    document.getElementById('password').addEventListener('input', function(e) {
+        const password = e.target.value;
+        const meter = document.getElementById('passwordStrengthMeter');
+        
+        let strength = 0;
+        if (password.length >= 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+        meter.className = 'strength-meter';
+        if (password.length === 0) {
+            meter.style.width = '0';
+        } else if (strength <= 1) {
+            meter.className += ' strength-weak';
+        } else if (strength <= 2) {
+            meter.className += ' strength-medium';
+        } else {
+            meter.className += ' strength-strong';
+        }
+    });
+
+    // Form submission
+    document.getElementById('signupForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const fullName = document.getElementById('fullName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const petName = document.getElementById('petName').value.trim();
+        const termsAccepted = document.getElementById('terms').checked;
+        
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const submitBtn = document.querySelector('.signup-btn');
+        
+        // Reset messages
+        errorMessage.classList.remove('show');
+        successMessage.classList.remove('show');
+        errorMessage.textContent = '';
+        successMessage.textContent = '';
+        
+        // Remove error classes from all inputs
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.classList.remove('error', 'success');
         });
         
-        // Terms and Privacy modals
-        function showTerms() {
-            alert('TERMS OF SERVICE\n\nWelcome to PetCare Community!\n\n1. You agree to be a responsible pet owner\n2. You will not post harmful or misleading content\n3. You respect other community members\n4. You follow all local pet laws and regulations\n\nFull terms available upon request.');
+        // Validation
+        if (!fullName || !email || !password || !confirmPassword) {
+            showError('Please fill in all required fields');
+            return;
         }
         
-        function showPrivacy() {
-            alert('PRIVACY POLICY\n\n1. We store your account information securely\n2. Your pet\'s information is private by default\n3. We never share your personal data with third parties\n4. You can delete your account anytime\n\nYour privacy is important to us!');
+        if (!termsAccepted) {
+            showError('Please accept the Terms of Service and Privacy Policy');
+            document.getElementById('terms').focus();
+            return;
         }
         
-        // Add spinner style
-        const style = document.createElement('style');
-        style.textContent = `
-            .spinner {
-                display: inline-block;
-                width: 20px;
-                height: 20px;
-                border: 3px solid rgba(255, 255, 255, 0.3);
-                border-radius: 50%;
-                border-top-color: white;
-                animation: spin 1s ease-in-out infinite;
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showError('Please enter a valid email address', 'email');
+            return;
+        }
+        
+        // Password validation
+        if (password.length < 6) {
+            showError('Password must be at least 6 characters long', 'password');
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            showError('Passwords do not match', 'password', 'confirmPassword');
+            return;
+        }
+        
+        // Show loading state
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span> Creating Account...';
+        
+        try {
+            // Use local backend for registration
+            const result = await backend.registerUser({
+                name: fullName,
+                email: email,
+                password: password,
+                petName: petName
+            });
+            
+            if (result.success) {
+                successMessage.textContent = 'Account created successfully! You are now signed in. Redirecting...';
+                successMessage.classList.add('show');
+
+                // Mark all inputs as successful
+                document.querySelectorAll('.form-input').forEach(input => {
+                    input.classList.add('success');
+                });
+
+                // Auto-login and redirect to profile
+                setTimeout(() => {
+                    window.location.href = 'profile.html';
+                }, 1500);
+            } else {
+                throw new Error(result.message || 'Registration failed');
             }
-            @keyframes spin {
-                to { transform: rotate(360deg); }
+            
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+    
+    function showError(message, ...fieldIds) {
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.textContent = message;
+        errorMessage.classList.add('show');
+        
+        // Mark the fields with errors
+        fieldIds.forEach(fieldId => {
+            if (fieldId) {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.classList.add('error');
+                    field.focus();
+                }
             }
-        `;
-        document.head.appendChild(style);
-    </script>
+        });
+    }
+    
+    // Clear error when user starts typing
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.addEventListener('input', function() {
+            this.classList.remove('error');
+            document.getElementById('errorMessage').classList.remove('show');
+        });
+    });
+    
+    // Terms and Privacy modals
+    function showTerms() {
+        alert('TERMS OF SERVICE\n\nWelcome to PetCare Community!\n\n1. You agree to be a responsible pet owner\n2. You will not post harmful or misleading content\n3. You respect other community members\n4. You follow all local pet laws and regulations\n\nFull terms available upon request.');
+    }
+    
+    function showPrivacy() {
+        alert('PRIVACY POLICY\n\n1. We store your account information securely\n2. Your pet\'s information is private by default\n3. We never share your personal data with third parties\n4. You can delete your account anytime\n\nYour privacy is important to us!');
+    }
+    
+    // Add spinner style
+    const style = document.createElement('style');
+    style.textContent = `
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
 </body>
+
 </html>
