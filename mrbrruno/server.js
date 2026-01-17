@@ -13,7 +13,7 @@ app.use(express.json());
 // Read API key and model from mr-bruno.txt
 function getConfig() {
     try {
-        const configPath = path.join(__dirname, 'mr-bruno.txt');
+        const configPath = path.join(__dirname, '.env');
         if (!fs.existsSync(configPath)) {
             console.error('ERROR: mr-bruno.txt file not found!');
             return { apiKey: null, model: 'mistralai/mistral-7b-instruct' };
@@ -164,4 +164,5 @@ app.listen(PORT, () => {
         console.error('OPENAI_API_KEY=sk-or-v1-xxxxxxxxxxxx');
         console.error('MODEL=mistralai/devstral-2512:free');
     }
+
 });
