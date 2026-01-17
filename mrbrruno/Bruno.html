@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mr Bruno - AI Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cherry Bomb One Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cherry Bomb One', 'Inter', cursive, sans-serif; /* ← CHANGED FONT */
+        }
+        
+        body, html {
+            height: 100%;
+            overflow: hidden;
+            color: #ffffff;
+text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+
+        }
+        
+        /* Fullscreen video background */
+        #video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+        
+        /* Fallback gradient if video doesn't load */
+        .video-fallback {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a1420 0%, #1a2b3e 50%, #0c1a2c 100%);
+            z-index: -2;
+        }
+        
+        /* Main container */
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+        
+        /* Left half - Chatbot overlay */
+        .chatbot-container {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        /* Ultra glossy glassmorphism chatbot */
+        .chatbot {
+            width: 95%;
+            max-width: 750px;
+            height: 90vh;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(2.67px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 0 30px rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: fadeIn 1s ease-out;
+            position: relative;
+        }
+        
+        /* Add glossy sheen effect */
+        .chatbot::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.4), 
+                transparent);
+            z-index: 2;
+        }
+        
+        .chatbot::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.05) 0%,
+                rgba(255, 255, 255, 0.02) 50%,
+                rgba(255, 255, 255, 0.05) 100%);
+            pointer-events: none;
+            z-index: 1;
+            border-radius: 32px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Chatbot header - REMOVED ROBOT ICON */
+        .chat-header {
+            padding: 24px 30px;
+            background: rgba(255, 255, 255, 0.07);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 3;
+        }
+        
+        .avatar {
+            /* Robot icon removed - keeping empty for potential future use */
+            display: none; /* ← HIDDEN */
+        }
+        
+        .header-text h1 {
+            font-size: 38px; /* Slightly larger for Cherry Bomb One */
+            font-weight: 400;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #ffffff, #b3d1ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(179, 209, 255, 0.3);
+            margin-bottom: 5px;
+        }
+        
+        .header-text p {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-top: 0;
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            margin-top: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #00ff9d;
+            box-shadow: 0 0 12px #00ff9d;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Chat area */
+        .chat-area {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Hide scrollbar but keep functionality */
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+        }
+        
+        .chat-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        
+        /* Message bubbles */
+        .message {
+            max-width: 80%;
+            padding: 18px 24px;
+            border-radius: 24px;
+            line-height: 1.6;
+            animation: messageSlide 0.4s ease-out;
+            word-wrap: break-word;
+            position: relative;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background: rgba(100, 150, 255, 0.2);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            border-bottom-right-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .ai-message {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-bottom-left-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .message-sender {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Cherry Bomb One', cursive;
+        }
+        
+        .user-message .message-sender {
+            color: #b3d1ff;
+        }
+        
+        .ai-message .message-sender {
+            color: #4cffd5;
+        }
+        
+        .message-text {
+            font-size: 17px;
+            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+        }
+        
+        /* Input area */
+        .input-area {
+            padding: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 18px;
+            position: relative;
+            z-index: 3;
+        }
+        
+        .input-area input {
+            flex: 1;
+            padding: 18px 24px;
+            border: none;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 17px;
+            outline: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .input-area input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(100, 150, 255, 0.4);
+            box-shadow: 0 0 20px rgba(100, 150, 255, 0.25);
+        }
+        
+        .input-area input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Inter', comicsans-serif;
+        }
+        
+        .send-button {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(100, 150, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .send-button:hover {
+            transform: scale(1.05);
+            background: rgba(120, 170, 255, 0.35);
+            box-shadow: 0 0 25px rgba(100, 150, 255, 0.5);
+        }
+        
+        .send-button:active {
+            transform: scale(0.98);
+        }
+        
+        /* Right half - Empty video area */
+        .video-area {
+            width: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        /* Video troubleshooting panel */
+        .video-troubleshoot {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .video-troubleshoot button {
+            background: rgba(100, 150, 255, 0.3);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .video-troubleshoot button:hover {
+            background: rgba(120, 170, 255, 0.5);
+        }
+        
+        /* Typing indicator */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            border-bottom-left-radius: 8px;
+            align-self: flex-start;
+            width: fit-content;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .typing-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #4cffd5;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .chatbot-container, .video-area {
+                width: 100%;
+                height: 50%;
+            }
+            
+            .chatbot {
+                height: 100%;
+                max-height: 95%;
+            }
+            
+            .video-area {
+                align-items: flex-start;
+                justify-content: center;
+                padding-top: 15px;
+            }
+            
+            .header-text h1 {
+                font-size: 32px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-text h1 {
+                font-size: 28px;
+            }
+            
+            .header-text p {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Video Background -->
+    <video id="video-background" autoplay loop muted playsinline>
+        <source src="bruno_ai.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    
+    <!-- Fallback background if video fails -->
+    <div class="video-fallback"></div>
+    
+    <div class="container">
+        <!-- Left half - Chatbot -->
+        <div class="chatbot-container">
+            <div class="chatbot">
+                <!-- Chat header - NO ROBOT ICON -->
+                <div class="chat-header">
+                    <div class="header-text">
+                        <h1>Mr Bruno</h1>
+                            <div class="status">
+                            <div class="status-dot"></div>
+                            <span>Online & Ready to Assist</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat area -->
+                <div class="chat-area" id="chatArea">
+                    <!-- Preloaded conversation will appear here -->
+                </div>
+                
+                <!-- Typing indicator (hidden by default) -->
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <span>Mr Bruno is thinking...</span>
+                </div>
+                
+                <!-- Input area -->
+                <div class="input-area">
+                    <input type="text" id="userInput" placeholder="Ask Mr Bruno anything...">
+                    <button class="send-button" id="sendButton">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right half - Video area -->
+        <div class="video-area">
+            <!-- Empty area showing just the video background -->
+            <!-- Video troubleshooting panel (hidden by default) -->
+            <div class="video-troubleshoot" id="videoTroubleshoot" style="display: none;">
+                <p><strong>Video Troubleshooting:</strong></p>
+                <p id="troubleshootMessage">Video not loading</p>
+                <button id="reloadVideoBtn">Reload Video</button>
+                <button id="testVideoBtn">Test with Sample Video</button>
+            </div>
+        </div>
+    </div>
+
+   <!DOCTYPE html>
+<html>
+<body>
+    <h1>Test Backend</h1>
+    <button onclick="testBackend()">Test Connection</button>
+    <div id="result"></div>
+             <script>
+        // DOM elements
+        const chatArea = document.getElementById('chatArea');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        
+                // Local Q&A System - No backend needed!
+        let conversationHistory = [];
+        let conversationId = 'chat-' + Date.now();
+        
+        // Load pet knowledge
+        let petKnowledge = {};
+        
+        async function loadPetKnowledge() {
+            try {
+                // Try to load from external file
+                const response = await fetch('pet-knowledge.js');
+                if (response.ok) {
+                    // We'll use the global findPetAnswer function
+                    console.log('✅ Pet knowledge loaded');
+                }
+            } catch (e) {
+                console.log('Using built-in pet knowledge');
+                // Fallback to built-in knowledge
+                petKnowledge = {
+                    "hello": "Hi! I'm Mr Bruno 🐾 Your pet care assistant!",
+                    "dog": "Dogs need love, exercise, and good food!",
+                    "cat": "Cats are independent but need care too!",
+                    "help": "I can answer questions about pet food, health, behavior, and general care!"
+                };
+            }
+        }
+        
+        // ================ MARKDOWN PARSER ================
+        function parseMarkdown(text) {
+            if (!text) return '';
+            
+            let html = text;
+            
+            // 1. Convert **bold** to <strong>bold</strong>
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // 2. Convert *italic* to <em>italic</em>
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // 3. Convert bullet points • to list items
+            // First, split by newlines
+            const lines = html.split('\n');
+            let inList = false;
+            let resultLines = [];
+            
+            for (let line of lines) {
+                if (line.trim().startsWith('•')) {
+                    if (!inList) {
+                        resultLines.push('<ul>');
+                        inList = true;
+                    }
+                    // Remove the bullet and wrap in li
+                    const content = line.replace(/^[•\-\*]\s*/, '').trim();
+                    resultLines.push(`<li>${content}</li>`);
+                } else if (line.trim().startsWith('- ')) {
+                    if (!inList) {
+                        resultLines.push('<ul>');
+                        inList = true;
+                    }
+                    const content = line.replace(/^-\s*/, '').trim();
+                    resultLines.push(`<li>${content}</li>`);
+                } else {
+                    if (inList) {
+                        resultLines.push('</ul>');
+                        inList = false;
+                    }
+                    resultLines.push(line);
+                }
+            }
+            
+            // Close any open list
+            if (inList) {
+                resultLines.push('</ul>');
+            }
+            
+            html = resultLines.join('\n');
+            
+            // 4. Convert double newlines to paragraphs
+            html = html.replace(/\n\n+/g, '</p><p>');
+            
+            // 5. Wrap in paragraph tags if needed
+            if (!html.startsWith('<')) {
+                html = '<p>' + html + '</p>';
+            }
+            
+            // 6. Convert single newlines to <br> tags (inside paragraphs)
+            html = html.replace(/<p>(.*?)<\/p>/gs, (match, content) => {
+                return '<p>' + content.replace(/\n/g, '<br>') + '</p>';
+            });
+            
+            return html;
+        }
+        
+               // ================ INITIALIZE CHAT ================
+        async function initializeChat() {
+            chatArea.innerHTML = '';
+            
+            // Load pet knowledge
+            await loadPetKnowledge();
+            
+            // Show welcome message
+            setTimeout(() => {
+                addMessage('ai', "**Hello! I'm Mr Bruno 🐾**\n\nI'm your Pet Care Assistant! I can help with:\n• **Dog & Cat care**\n• **Food & nutrition**\n• **Health questions**\n• **Behavior tips**\n• **Grooming advice**\n\nTry asking: *'dog food'*, *'cat behavior'*, or *'pet emergency'*");
+            }, 500);
+            
+            // Update status
+            checkSystemStatus();
+        }
+       
+             // ================ CHECK SYSTEM STATUS ================
+        async function checkSystemStatus() {
+            // Always connected for local Q&A
+            const statusElement = document.querySelector('.status span');
+            if (statusElement) {
+                statusElement.textContent = 'Pet Assistant - Online';
+                const statusDot = document.querySelector('.status-dot');
+                if (statusDot) {
+                    statusDot.style.backgroundColor = '#00ff9d';
+                    statusDot.style.boxShadow = '0 0 12px #00ff9d';
+                }
+            }
+            return true;
+        }
+        
+        // ================ ADD MESSAGE TO CHAT ================
+        function addMessage(sender, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const senderName = sender === 'user' ? 'You' : 'Mr Bruno';
+            
+            // Parse markdown for AI messages only (user messages stay as-is)
+            let messageContent = text;
+            if (sender === 'ai') {
+                messageContent = parseMarkdown(text);
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-sender">
+                    <span>${senderName}</span>
+                </div>
+                <div class="message-text">${messageContent}</div>
+            `;
+            
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        // ================ SEND MESSAGE TO BACKEND ================
+               // ================ GET PET ANSWER ================
+                // ================ GET PET ANSWER ================
+        async function getPetAnswer(userMessage) {
+            try {
+                // Try to use the external knowledge base if loaded
+                if (typeof findPetAnswer !== 'undefined') {
+                    const answer = findPetAnswer(userMessage);
+                    if (answer && answer !== petKnowledge["unknown"]) {
+                        return { success: true, response: answer };
+                    }
+                }
+                
+                // Fallback to built-in responses
+                const q = userMessage.toLowerCase().trim();
+                
+                // Built-in fallback responses
+                const fallbackQA = {
+                    // Dog topics
+                    "dog": "**Dogs** need proper nutrition, exercise, training, and regular vet care! Ask specifically about: food amounts, training tips, or health concerns.",
+                    "puppy": "**Puppies** need 3-4 meals daily, socialization, basic training, and vaccination series. Ask about: feeding schedule, potty training, or puppy-proofing.",
+                    
+                    // Cat topics
+                    "cat": "**Cats** need high-protein food, clean litter boxes, regular vet checkups, and environmental enrichment. Ask about: litter training, food types, or behavior.",
+                    "kitten": "**Kittens** need special food, litter training, vaccination series, and gentle socialization. Ask about: feeding amounts, litter box setup, or vet schedule.",
+                    
+                    // General
+                    "pet": "I specialize in **pet care advice**! Ask specifically about dogs, cats, small pets, health concerns, or general care topics.",
+                    "help": "I can help with:\n• Dog care: Food, training, health\n• Cat care: Litter, behavior, nutrition\n• Emergencies: When to see a vet\n• General: Costs, adoption, travel\n\nTry asking a specific question!",
+                    
+                    // Default
+                    "default": "🐾 **I'm Mr Bruno, your pet care assistant!**\n\nI know about:\n• **Dog nutrition & training**\n• **Cat behavior & litter issues**\n• **Small pet care** (rabbits, birds, fish)\n• **Pet emergencies & health**\n• **Costs & general care**\n\nTry: *'How much to feed my dog?'* or *'Cat litter problems?'*"
+                };
+                
+                // Check fallback
+                if (fallbackQA[q]) {
+                    return { success: true, response: fallbackQA[q] };
+                }
+                
+                if (q.includes("dog")) return { success: true, response: fallbackQA["dog"] };
+                if (q.includes("cat")) return { success: true, response: fallbackQA["cat"] };
+                if (q.includes("puppy") || q.includes("kitten")) return { success: true, response: fallbackQA["puppy"] };
+                if (q.includes("pet")) return { success: true, response: fallbackQA["pet"] };
+                
+                return { success: true, response: fallbackQA["default"] };
+                
+            } catch (error) {
+                console.error('Error getting pet answer:', error);
+                return { 
+                    success: true, 
+                    response: "**Hi! I'm Mr Bruno 🐾**\n\nI'm your pet care assistant! I can help with dog care, cat behavior, pet health questions, and general pet advice. What would you like to know?" 
+                };
+            }
+        }
+        // ================ MAIN SEND FUNCTION ================
+                // ================ MAIN SEND FUNCTION ================
+        async function sendMessage() {
+            const userText = userInput.value.trim();
+            
+            if (!userText) {
+                return;
+            }
+            
+            // Add user message
+            addMessage('user', userText);
+            userInput.value = '';
+            
+            // Show typing indicator
+            typingIndicator.style.display = 'flex';
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            // Disable send button while processing
+            sendButton.disabled = true;
+            
+            // Small delay for natural feel
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // Get answer from pet knowledge
+            const result = await getPetAnswer(userText);
+            
+            typingIndicator.style.display = 'none';
+            sendButton.disabled = false;
+            
+            if (result.success) {
+                addMessage('ai', result.response);
+            } else {
+                addMessage('ai', "I'm here to help with pet care questions! Try asking about dogs, cats, food, or health topics.");
+            }
+            
+            // Save conversation to localStorage
+            try {
+                const conv = JSON.parse(localStorage.getItem('bruno_chats') || '[]');
+                conv.push({
+                    question: userText,
+                    answer: result.response,
+                    time: new Date().toISOString()
+                });
+                // Keep only last 50 conversations
+                if (conv.length > 50) conv.shift();
+                localStorage.setItem('bruno_chats', JSON.stringify(conv));
+            } catch (e) {
+                // Silent fail
+            }
+        }
+        
+        // ================ EVENT LISTENERS ================
+        sendButton.addEventListener('click', sendMessage);
+        
+        userInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // ================ INITIALIZE ON LOAD ================
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize chat
+            initializeChat();
+            
+            // Focus on input field
+            setTimeout(() => {
+                userInput.focus();
+            }, 1000);
+            
+                       // Update status periodically
+            setInterval(checkSystemStatus, 30000);
+            // Video autoplay fix
+            const videoElement = document.getElementById('video-background');
+            if (videoElement) {
+                videoElement.play().catch(() => {
+                    // Silent fail - user can click to play
+                });
+                
+                document.addEventListener('click', () => {
+                    if (videoElement.paused) {
+                        videoElement.play();
+                    }
+                });
+            }
+        });
+        
+        // ================ VIDEO TROUBLESHOOTING ================
+        // Keep video troubleshooting hidden unless needed
+        const videoElement = document.getElementById('video-background');
+        const videoTroubleshoot = document.getElementById('videoTroubleshoot');
+        const reloadVideoBtn = document.getElementById('reloadVideoBtn');
+        const testVideoBtn = document.getElementById('testVideoBtn');
+        
+        if (videoTroubleshoot && reloadVideoBtn && testVideoBtn) {
+            // Hide troubleshooting panel by default
+            videoTroubleshoot.style.display = 'none';
+            
+            // Only show if video fails to load after 3 seconds
+            setTimeout(() => {
+                if (videoElement && videoElement.readyState === 0) {
+                    videoTroubleshoot.style.display = 'block';
+                }
+            }, 3000);
+            
+            reloadVideoBtn.addEventListener('click', () => {
+                if (videoElement) {
+                    videoElement.src = 'bruno_ai.mp4';
+                    videoElement.load();
+                    videoElement.play();
+                    videoTroubleshoot.style.display = 'none';
+                }
+            });
+            
+            testVideoBtn.addEventListener('click', () => {
+                if (videoElement) {
+                    const sampleVideoUrl = "https://assets.mixkit.co/videos/preview/mixkit-abstract-digital-background-2295-large.mp4";
+                    videoElement.src = sampleVideoUrl;
+                    videoElement.load();
+                    videoElement.play();
+                    videoTroubleshoot.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
