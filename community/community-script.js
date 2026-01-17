@@ -5,7 +5,7 @@ class CommunityBackend {
         this.POSTS_KEY = 'petcare_community_posts_v3';
         this.LIKES_KEY = 'petcare_community_likes_v3';
         this.COMMENTS_KEY = 'petcare_community_comments_v3';
-        this.CURRENT_USER_KEY = 'petcare_current_user_v3';
+        this.CURRENT_USER_KEY = 'petcare_current_user';
         this.MEDIA_KEY = 'petcare_community_media_v3';
         this.initStorage();
     }
@@ -1284,4 +1284,5 @@ function setupEventListeners() {
 }
 
 // Initialize the app
+
 window.addEventListener('load', initializeApp);
