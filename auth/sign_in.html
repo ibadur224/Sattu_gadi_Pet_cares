@@ -392,241 +392,310 @@
         </div>
     </div>
 
-    <script>
-        // =========== LOCAL STORAGE BACKEND SYSTEM ===========
-        // This simulates a backend using localStorage
-        
-        class LocalBackend {
-            constructor() {
-                this.USERS_KEY = 'petcare_users_v2';
-                this.SESSIONS_KEY = 'petcare_sessions';
-                this.CURRENT_USER_KEY = 'petcare_current_user';
-                this.initStorage();
-            }
-            
-            initStorage() {
-                if (!localStorage.getItem(this.USERS_KEY)) {
-                    // Create initial users
-                    const initialUsers = [
-                        {
-                            id: this.generateId(),
-                            name: 'John Doe',
-                            email: 'john@example.com',
-                            password: 'password123', // In real app, hash this
-                            petName: 'Buddy',
-                            petType: 'Dog',
-                            location: 'New York',
-                            createdAt: new Date().toISOString(),
-                            lastLogin: new Date().toISOString()
-                        },
-                        {
-                            id: this.generateId(),
-                            name: 'Jane Smith',
-                            email: 'jane@example.com',
-                            password: 'password123',
-                            petName: 'Whiskers',
-                            petType: 'Cat',
-                            location: 'Los Angeles',
-                            createdAt: new Date().toISOString(),
-                            lastLogin: new Date().toISOString()
-                        }
-                    ];
-                    localStorage.setItem(this.USERS_KEY, JSON.stringify(initialUsers));
-                }
-                
-                if (!localStorage.getItem(this.SESSIONS_KEY)) {
-                    localStorage.setItem(this.SESSIONS_KEY, JSON.stringify({}));
-                }
-            }
-            
-            generateId() {
-                return Date.now().toString(36) + Math.random().toString(36).substr(2);
-            }
-            
-            // User authentication
-            async authenticateUser(email, password) {
-                const users = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
-                const user = users.find(u => u.email === email && u.password === password);
-                
-                if (!user) {
-                    return { success: false, message: 'Invalid email or password' };
-                }
-                
-                // Update last login
-                user.lastLogin = new Date().toISOString();
-                this.saveUsers(users);
-                
-                // Create session
-                const sessionId = this.generateId();
-                const sessions = JSON.parse(localStorage.getItem(this.SESSIONS_KEY));
-                sessions[sessionId] = {
-                    userId: user.id,
-                    email: user.email,
-                    createdAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-                };
-                localStorage.setItem(this.SESSIONS_KEY, JSON.stringify(sessions));
-                
-                // Store current user
-                const userWithoutPassword = { ...user };
-                delete userWithoutPassword.password;
-                localStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-                
-                return { 
-                    success: true, 
-                    message: 'Login successful',
-                    user: userWithoutPassword,
-                    token: sessionId
-                };
-            }
-            
-            // Get current user
-            getCurrentUser() {
-                const userStr = localStorage.getItem(this.CURRENT_USER_KEY);
-                return userStr ? JSON.parse(userStr) : null;
-            }
-            
-            // Logout
-            logout() {
-                localStorage.removeItem(this.CURRENT_USER_KEY);
-                return { success: true, message: 'Logged out successfully' };
-            }
-            
-            // Save users to storage
-            saveUsers(users) {
-                localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
-            }
+   <script>
+    // =========== LOCAL STORAGE BACKEND SYSTEM ===========
+    // This simulates a backend using localStorage
+    
+    class LocalBackend {
+        constructor() {
+            this.USERS_KEY = 'petcare_users_v2';
+            this.SESSIONS_KEY = 'petcare_sessions';
+            this.CURRENT_USER_KEY = 'petcare_current_user';  // Updated to match community page
+            this.COMMUNITY_USERS_KEY = 'petcare_community_users_v3'; // Community users key
+            this.initStorage();
         }
         
-        // Initialize backend
-        const backend = new LocalBackend();
-        
-        // Password visibility toggle
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const icon = this.querySelector('i');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.className = 'fas fa-eye-slash';
-            } else {
-                passwordInput.type = 'password';
-                icon.className = 'fas fa-eye';
+        initStorage() {
+            if (!localStorage.getItem(this.USERS_KEY)) {
+                // Create initial users
+                const initialUsers = [
+                    {
+                        id: this.generateId(),
+                        name: 'John Doe',
+                        email: 'john@example.com',
+                        password: 'password123',
+                        petName: 'Buddy',
+                        petType: 'Dog',
+                        avatar: 'JD',
+                        bio: 'Dog lover and proud owner of Buddy!',
+                        isOnline: true,
+                        joinedAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString(),
+                        postCount: 3,
+                        likeCount: 15
+                    },
+                    {
+                        id: this.generateId(),
+                        name: 'Jane Smith',
+                        email: 'jane@example.com',
+                        password: 'password123',
+                        petName: 'Whiskers',
+                        petType: 'Cat',
+                        avatar: 'JS',
+                        bio: 'Cat enthusiast and pet photographer',
+                        isOnline: true,
+                        joinedAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString(),
+                        postCount: 4,
+                        likeCount: 20
+                    }
+                ];
+                localStorage.setItem(this.USERS_KEY, JSON.stringify(initialUsers));
             }
-        });
-
-        // Form submission
-        document.getElementById('signinForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
             
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const rememberMe = document.getElementById('rememberMe').checked;
-            const errorMessage = document.getElementById('errorMessage');
-            const successMessage = document.getElementById('successMessage');
-            const submitBtn = document.getElementById('submitBtn');
-            const originalBtnText = submitBtn.innerHTML;
+            // Sync with community storage if needed
+            this.syncWithCommunityStorage();
+        }
+        
+        generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+        
+        // Sync auth users with community storage
+        syncWithCommunityStorage() {
+            const authUsers = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+            let communityUsers = JSON.parse(localStorage.getItem(this.COMMUNITY_USERS_KEY) || '[]');
             
-            // Reset messages
-            errorMessage.classList.remove('show');
-            successMessage.classList.remove('show');
-            errorMessage.textContent = '';
-            successMessage.textContent = '';
-            
-            // Remove error classes from inputs
-            document.querySelectorAll('.form-input').forEach(input => {
-                input.classList.remove('error', 'success');
+            // Add missing users to community storage
+            authUsers.forEach(authUser => {
+                const exists = communityUsers.some(cu => cu.email === authUser.email);
+                if (!exists) {
+                    const communityUser = {
+                        id: authUser.id,
+                        name: authUser.name,
+                        email: authUser.email,
+                        password: authUser.password,
+                        petName: authUser.petName || '',
+                        petType: authUser.petType || '',
+                        avatar: this.getInitials(authUser.name),
+                        bio: authUser.bio || `Hello! I'm ${authUser.petName ? authUser.petName + "'s" : 'a'} pet parent`,
+                        isOnline: true,
+                        joinedAt: authUser.createdAt || new Date().toISOString(),
+                        lastLogin: new Date().toISOString(),
+                        postCount: 0,
+                        likeCount: 0
+                    };
+                    communityUsers.push(communityUser);
+                }
             });
             
-            // Show loading state
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner"></span> Signing in...';
-            
-            try {
-                // Basic validation
-                if (!email || !password) {
-                    throw new Error('Please enter both email and password');
-                }
-                
-                // Email format validation
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                    throw new Error('Please enter a valid email address');
-                }
-                
-                // Use local backend for authentication
-                const result = await backend.authenticateUser(email, password);
-                
-                if (result.success) {
-                    // Success - mark inputs as valid
-                    document.getElementById('email').classList.add('success');
-                    document.getElementById('password').classList.add('success');
-                    
-                    // Store token in localStorage if remember me is checked
-                    if (rememberMe && result.token) {
-                        localStorage.setItem('auth_token', result.token);
-                    } else if (result.token) {
-                        // Store in sessionStorage for session-only
-                        sessionStorage.setItem('auth_token', result.token);
-                    }
-                    
-                    // Show success message
-                    successMessage.textContent = result.message + '! Redirecting...';
-                    successMessage.classList.add('show');
-                    
-                    // Redirect to profile
-                    setTimeout(() => {
-                        window.location.href = 'profile.html';
-                    }, 1000);
-                } else {
-                    throw new Error(result.message || 'Invalid email or password');
-                }
-                
-            } catch (error) {
-                // Show error message
-                errorMessage.textContent = error.message;
-                errorMessage.classList.add('show');
-                
-                // Mark inputs as error
-                if (error.message.includes('email')) {
-                    document.getElementById('email').classList.add('error');
-                    document.getElementById('email').focus();
-                } else if (error.message.includes('password')) {
-                    document.getElementById('password').classList.add('error');
-                    document.getElementById('password').focus();
-                } else {
-                    document.getElementById('email').classList.add('error');
-                    document.getElementById('password').classList.add('error');
-                }
-                
-                console.error('Login error:', error);
-                
-            } finally {
-                // Restore button state
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            }
-        });
-        
-        // Clear errors when user starts typing
-        document.getElementById('email').addEventListener('input', function() {
-            this.classList.remove('error');
-            document.getElementById('errorMessage').classList.remove('show');
-        });
-        
-        document.getElementById('password').addEventListener('input', function() {
-            this.classList.remove('error');
-            document.getElementById('errorMessage').classList.remove('show');
-        });
-        
-        // Auto-focus email field
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('email').focus();
-        });
-        
-        function showForgotPasswordMessage() {
-            alert('Forgot password feature coming soon! For now, you can use these test accounts:\n\nEmail: john@example.com\nPassword: password123\n\nEmail: jane@example.com\nPassword: password123');
+            localStorage.setItem(this.COMMUNITY_USERS_KEY, JSON.stringify(communityUsers));
         }
-    </script>
+        
+        // User authentication
+        async authenticateUser(email, password) {
+            const users = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+            const user = users.find(u => u.email === email && u.password === password);
+            
+            if (!user) {
+                return { success: false, message: 'Invalid email or password' };
+            }
+            
+            // Update last login
+            user.lastLogin = new Date().toISOString();
+            user.isOnline = true;
+            this.saveUsers(users);
+            
+            // Also update in community storage
+            let communityUsers = JSON.parse(localStorage.getItem(this.COMMUNITY_USERS_KEY) || '[]');
+            const communityUserIndex = communityUsers.findIndex(u => u.email === email);
+            if (communityUserIndex > -1) {
+                communityUsers[communityUserIndex].isOnline = true;
+                communityUsers[communityUserIndex].lastLogin = new Date().toISOString();
+                localStorage.setItem(this.COMMUNITY_USERS_KEY, JSON.stringify(communityUsers));
+            }
+            
+            // Store current user (without password)
+            const userWithoutPassword = { ...user };
+            delete userWithoutPassword.password;
+            
+            // Use the same key as community page
+            localStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
+            sessionStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
+            
+            return { 
+                success: true, 
+                message: 'Login successful',
+                user: userWithoutPassword
+            };
+        }
+        
+        // Get current user
+        getCurrentUser() {
+            let userStr = localStorage.getItem(this.CURRENT_USER_KEY) || 
+                         sessionStorage.getItem(this.CURRENT_USER_KEY);
+            return userStr ? JSON.parse(userStr) : null;
+        }
+        
+        // Logout
+        logout() {
+            const currentUser = this.getCurrentUser();
+            if (currentUser) {
+                // Update user as offline in both storages
+                const users = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+                const userIndex = users.findIndex(u => u.email === currentUser.email);
+                if (userIndex > -1) {
+                    users[userIndex].isOnline = false;
+                    this.saveUsers(users);
+                }
+                
+                // Also update in community storage
+                let communityUsers = JSON.parse(localStorage.getItem(this.COMMUNITY_USERS_KEY) || '[]');
+                const communityUserIndex = communityUsers.findIndex(u => u.email === currentUser.email);
+                if (communityUserIndex > -1) {
+                    communityUsers[communityUserIndex].isOnline = false;
+                    localStorage.setItem(this.COMMUNITY_USERS_KEY, JSON.stringify(communityUsers));
+                }
+            }
+            
+            localStorage.removeItem(this.CURRENT_USER_KEY);
+            sessionStorage.removeItem(this.CURRENT_USER_KEY);
+            return { success: true, message: 'Logged out successfully' };
+        }
+        
+        getInitials(name) {
+            return name
+                .split(' ')
+                .map(n => n[0])
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+        }
+        
+        // Save users to storage
+        saveUsers(users) {
+            localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+        }
+    }
+    
+    // Initialize backend
+    const backend = new LocalBackend();
+    
+    // Password visibility toggle
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordInput.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+
+    // Form submission
+    document.getElementById('signinForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        const originalBtnText = submitBtn.innerHTML;
+        
+        // Reset messages
+        errorMessage.classList.remove('show');
+        successMessage.classList.remove('show');
+        errorMessage.textContent = '';
+        successMessage.textContent = '';
+        
+        // Remove error classes from inputs
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.classList.remove('error', 'success');
+        });
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span> Signing in...';
+        
+        try {
+            // Basic validation
+            if (!email || !password) {
+                throw new Error('Please enter both email and password');
+            }
+            
+            // Email format validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                throw new Error('Please enter a valid email address');
+            }
+            
+            // Use local backend for authentication
+            const result = await backend.authenticateUser(email, password);
+            
+            if (result.success) {
+                // Success - mark inputs as valid
+                document.getElementById('email').classList.add('success');
+                document.getElementById('password').classList.add('success');
+                
+                // Store in appropriate storage based on remember me
+                if (!rememberMe) {
+                    // Clear localStorage and use sessionStorage only
+                    localStorage.removeItem('petcare_current_user');
+                }
+                
+                // Show success message
+                successMessage.textContent = result.message + '! Redirecting...';
+                successMessage.classList.add('show');
+                
+                // Redirect to profile
+                setTimeout(() => {
+                    window.location.href = 'profile.html';
+                }, 1000);
+            } else {
+                throw new Error(result.message || 'Invalid email or password');
+            }
+            
+        } catch (error) {
+            // Show error message
+            errorMessage.textContent = error.message;
+            errorMessage.classList.add('show');
+            
+            // Mark inputs as error
+            if (error.message.includes('email')) {
+                document.getElementById('email').classList.add('error');
+                document.getElementById('email').focus();
+            } else if (error.message.includes('password')) {
+                document.getElementById('password').classList.add('error');
+                document.getElementById('password').focus();
+            } else {
+                document.getElementById('email').classList.add('error');
+                document.getElementById('password').classList.add('error');
+            }
+            
+            console.error('Login error:', error);
+            
+        } finally {
+            // Restore button state
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+    
+    // Clear errors when user starts typing
+    document.getElementById('email').addEventListener('input', function() {
+        this.classList.remove('error');
+        document.getElementById('errorMessage').classList.remove('show');
+    });
+    
+    document.getElementById('password').addEventListener('input', function() {
+        this.classList.remove('error');
+        document.getElementById('errorMessage').classList.remove('show');
+    });
+    
+    // Auto-focus email field
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('email').focus();
+    });
+    
+    function showForgotPasswordMessage() {
+        alert('Forgot password feature coming soon! For now, you can use these test accounts:\n\nEmail: john@example.com\nPassword: password123\n\nEmail: jane@example.com\nPassword: password123');
+    }
+</script>
 </body>
+
 </html>
