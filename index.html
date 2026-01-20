@@ -1,37 +1,48 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Professional Website</title>
 <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap" rel="stylesheet">
 
 <style>
-html, body {
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
     font-family: 'Cherry Bomb One', cursive;
 }
 
-/* VIDEO BACKGROUND */
+/* VIDEO BACKGROUND - RESPONSIVE */
 #video-bg {
     position: fixed;
-    width: 100%;
-    height: 100%;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
 }
 
 #video-bg video {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 /* ENTER BUTTON */
 #enterBtn {
-    position: absolute;
+    position: fixed;
     bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
@@ -44,7 +55,7 @@ html, body {
     background: rgba(255,255,255,0.15);
     backdrop-filter: blur(8px);
     cursor: pointer;
-    z-index: 9999; /* Fix layering */
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -64,8 +75,9 @@ html, body {
         0 0 20px rgba(255,255,255,0.3) inset;
 }
 
+/* BACK BUTTON */
 #backBtn {
-    position: absolute;
+    position: fixed;
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
@@ -92,7 +104,6 @@ html, body {
     padding: 0;
 }
 
-/* Hover effect for tactical/glossy feel */
 #backBtn:hover {
     background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2));
     transform: translateX(-50%) translateY(-3px);
@@ -104,10 +115,13 @@ html, body {
     letter-spacing: 4px;
 }
 
-/* GLASS OVERLAY (HIDDEN INITIALLY) */
+/* GLASS OVERLAY */
 #glass {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     background: rgba(255,255,255,0.15);
     backdrop-filter: blur(25px);
     opacity: 0;
@@ -116,28 +130,55 @@ html, body {
     z-index: 2;
 }
 
-/* MAIN MENU */
+/* TAGLINE */
+#tagline {
+    position: fixed;
+    top: clamp(100px, 15vh, 150px);
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: clamp(30px, 5vw, 50px);
+    text-align: center;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    letter-spacing: 2px;
+    width: 90%;
+    max-width: 800px;
+    padding: 0 20px;
+    word-wrap: break-word;
+}
+
+/* MAIN MENU - RESPONSIVE FLEXBOX */
 #menu {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 25px;
+    flex-wrap: wrap;
+    gap: clamp(15px, 3vw, 25px);
+    padding: 20px;
     opacity: 0;
     transition: opacity 0.8s ease;
     z-index: 4;
 }
 
-/* GLASS TILES - ENHANCED WITH HOVER EFFECTS */
+/* GLASS TILES - RESPONSIVE SIZING */
 .tile {
-    width: 280px;
-    height: 340px;
+    width: clamp(200px, 20vw, 280px);
+    height: clamp(250px, 35vh, 340px);
+    min-width: 180px;
+    min-height: 240px;
     background: rgba(255,255,255,0.25);
     backdrop-filter: blur(18px);
     border-radius: 25px;
     color: white;
-    font-size: 26px;
+    font-size: clamp(18px, 1.8vw, 26px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -149,6 +190,10 @@ html, body {
         0 0 30px rgba(255,255,255,0.1) inset;
     text-transform: uppercase;
     letter-spacing: 1.5px;
+    text-align: center;
+    padding: 20px;
+    margin: 10px;
+    flex-shrink: 0;
 }
 
 .tile:hover {
@@ -163,20 +208,129 @@ html, body {
     z-index: 5;
 }
 
-/* TAGLINE */
-#tagline {
-    position: absolute;
-    top: 150px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-size: 50px;
-    text-align: center;
-    z-index: 5;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    letter-spacing: 2px;
+/* RESPONSIVE MEDIA QUERIES */
+@media (max-width: 1400px) {
+    .tile {
+        width: clamp(180px, 18vw, 240px);
+        height: clamp(230px, 32vh, 300px);
+    }
+    
+    #tagline {
+        font-size: clamp(28px, 4vw, 40px);
+    }
+}
+
+@media (max-width: 1024px) {
+    #menu {
+        gap: 15px;
+    }
+    
+    .tile {
+        width: clamp(160px, 22vw, 220px);
+        height: clamp(210px, 30vh, 280px);
+        font-size: clamp(16px, 1.6vw, 22px);
+    }
+    
+    #tagline {
+        top: clamp(80px, 12vh, 120px);
+        font-size: clamp(24px, 3.5vw, 36px);
+    }
+}
+
+@media (max-width: 768px) {
+    #menu {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        overflow-y: auto;
+        padding-top: 120px;
+        padding-bottom: 80px;
+    }
+    
+    .tile {
+        width: 160px;
+        height: 200px;
+        font-size: 16px;
+        margin: 8px;
+    }
+    
+    #tagline {
+        font-size: clamp(20px, 3vw, 28px);
+        top: 60px;
+    }
+    
+    #enterBtn {
+        width: 100px;
+        height: 35px;
+        font-size: 12px;
+        bottom: 30px;
+    }
+    
+    #backBtn {
+        width: 90px;
+        height: 35px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    #menu {
+        padding-top: 100px;
+    }
+    
+    .tile {
+        width: 140px;
+        height: 170px;
+        font-size: 14px;
+        border-radius: 20px;
+        margin: 6px;
+    }
+    
+    #tagline {
+        font-size: clamp(18px, 2.5vw, 24px);
+        top: 50px;
+        padding: 0 15px;
+    }
+    
+    #enterBtn, #backBtn {
+        width: 80px;
+        height: 30px;
+        font-size: 12px;
+    }
+}
+
+@media (min-width: 2560px) {
+    .tile {
+        width: 320px;
+        height: 380px;
+        font-size: 28px;
+    }
+    
+    #tagline {
+        font-size: 60px;
+        top: 200px;
+    }
+    
+    #menu {
+        gap: 35px;
+    }
+}
+
+/* Prevent horizontal scrolling on very small screens */
+@media (max-width: 320px) {
+    html, body {
+        overflow-x: hidden;
+    }
+    
+    #menu {
+        padding: 10px;
+    }
+    
+    .tile {
+        width: 130px;
+        height: 160px;
+        margin: 5px;
+    }
 }
 </style>
 </head>
@@ -228,7 +382,7 @@ document.getElementById("backBtn").onclick = function () {
     this.style.display = "none";
 };
 
-// In your existing JavaScript, update the tile click handler
+// Handle tile clicks
 document.addEventListener('DOMContentLoaded', function() {
     const tiles = document.querySelectorAll('.tile');
     tiles.forEach(tile => {
@@ -242,42 +396,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Handle other tiles normally (your existing code)
-            // ... your existing navigation code ...
+            // Handle other tiles normally
+            // Add your existing navigation code here
+            console.log('Navigating to:', target);
         });
     });
+    
+    // Check if we should show login popup automatically
+    if (localStorage.getItem('show_login_popup') === 'true') {
+        localStorage.removeItem('show_login_popup');
+        setTimeout(() => {
+            if (typeof showAuthPopup === 'function') {
+                showAuthPopup('login');
+            }
+        }, 1000);
+    }
+});
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    // Force reflow on menu to fix any layout issues
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('menu').offsetHeight; // Trigger reflow
+    document.getElementById('menu').style.display = 'flex';
 });
 </script>
-<script src="card-animation.js"></script>
-// Check if we should show login popup automatically
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if we came from profile page wanting to login
-    if (localStorage.getItem('show_login_popup') === 'true') {
-        // Clear the flag
-        localStorage.removeItem('show_login_popup');
-        
-        // Show login popup after a short delay
-        setTimeout(() => {
-            if (typeof showAuthPopup === 'function') {
-                showAuthPopup('login');
-            }
-        }, 1000);
-    }
-});
-// Check if we should show login popup automatically
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if we came from profile page wanting to login
-    if (localStorage.getItem('show_login_popup') === 'true') {
-        // Clear the flag
-        localStorage.removeItem('show_login_popup');
-        
-        // Show login popup after a short delay
-        setTimeout(() => {
-            if (typeof showAuthPopup === 'function') {
-                showAuthPopup('login');
-            }
-        }, 1000);
-    }
-});
 </body>
 </html>
